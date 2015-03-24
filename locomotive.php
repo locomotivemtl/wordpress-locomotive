@@ -4,7 +4,7 @@
 	Plugin Name:  Locomotive
 	Plugin URI:   https://github.com/locomotivemtl/wordpress-locomotive
 	Description:  Adds a touch of Locomotive to WordPress
-	Version:      1.0.0
+	Version:      1.0.1
 
 	Author:       Locomotive
 	Author URI:   http://locomotive.ca
@@ -28,27 +28,39 @@ if ( defined('WP_INSTALLING') && WP_INSTALLING ) {
 	return;
 }
 
+/**
+ * Constants you could define in your WordPress configuration.
+ */
+
 if ( ! defined('AGENCY_NAME')  ) define('AGENCY_NAME',  'Locomotive');
 if ( ! defined('AGENCY_URL')   ) define('AGENCY_URL',   'locomotive.ca');
 if ( ! defined('AGENCY_EMAIL') ) define('AGENCY_EMAIL', 'info@' . AGENCY_URL);
 
 /**
- * Action: Register the plugin's text domain
- *
- * @used-by Action: "plugins_loaded"
+ * Some pre-processed useful variables.
  */
 
-function load_textdomain()
-{
-	load_muplugin_textdomain( 'locomotive', basename( dirname( __FILE__ ) ) . 'assets/languages' );
-}
+$plugin = \wp_normalize_path( basename( __DIR__ ) );
+$mu_plugin_dir = \wp_normalize_path( WPMU_PLUGIN_DIR );
 
-\add_action( 'plugins_loaded', 'load_textdomain' );
+/**
+ * Action: Register the plugin's text domain
+ *
+ * @uses Action: WordPress\"muplugins_loaded"
+ * @uses Action: WordPress\"plugins_loaded"
+ */
+
+if ( ! empty( $plugin ) && 0 === strpos( $plugin, $mu_plugin_dir ) ) {
+	\add_action( 'muplugins_loaded', function() use ( $plugin ) { \load_muplugin_textdomain( 'locomotive', $plugin . 'assets/languages' ); } );
+}
+else {
+	\add_action( 'plugins_loaded', function() use ( $plugin ) { \load_plugin_textdomain( 'locomotive', false, $plugin . 'assets/languages' ); } );
+}
 
 /**
  * Action: Register scripts and styles for WordPress
  *
- * @used-by Action: "init"
+ * @used-by Action: WordPress\"init"
  */
 
 function register_assets()
@@ -61,8 +73,8 @@ function register_assets()
 /**
  * Action: Enqueue scripts and styles for WordPress
  *
- * @used-by Action: "admin_enqueue_scripts"
- * @used-by Action: "wp_enqueue_scripts"
+ * @used-by Action: WordPress\"admin_enqueue_scripts"
+ * @used-by Action: WordPress\"wp_enqueue_scripts"
  */
 
 function enqueue_assets()
@@ -76,12 +88,14 @@ function enqueue_assets()
 /**
  * Action: Enqueue scripts and styles for WordPress
  *
- * @used-by Action: "admin_bar_menu"
+ * @used-by Action: WordPress\"admin_bar_menu"
+ *
+ * @param WP_Admin_Bar $wp_admin_bar
  */
 
-function admin_bar_agency( $wp_toolbar )
+function admin_bar_agency( $wp_admin_bar )
 {
-	$wp_toolbar->add_node([
+	$wp_admin_bar->add_node([
 		'id'        => 'loco-logo',
 		'title'     => '<span class="ab-icon"></span>',
 		'href'      => 'http://locomotive.ca/',
@@ -91,7 +105,7 @@ function admin_bar_agency( $wp_toolbar )
 	]);
 
 	// Add Agency Link
-	$wp_toolbar->add_node([
+	$wp_admin_bar->add_node([
 		'parent' => 'loco-logo', // loco-logo-external
 		'id'     => 'loco-external',
 		'title'  => ucfirst( AGENCY_URL),
@@ -99,14 +113,14 @@ function admin_bar_agency( $wp_toolbar )
 	]);
 
 	// Add feedback link
-	$wp_toolbar->add_node([
+	$wp_admin_bar->add_node([
 		'parent' => 'loco-logo', // loco-logo-external
 		'id'     => 'loco-feedback',
 		'title'  => __('Feedback'),
 		'href'   => 'mailto:' . AGENCY_EMAIL . '?subject=' . urlencode( __( sprintf( 'About %s', \get_bloginfo('name') ), 'locomotive' ) )
 	]);
 
-	$wp_toolbar->add_group([
+	$wp_admin_bar->add_group([
 		'parent'    => 'loco-logo',
 		'id'        => 'loco-logo-external',
 		'meta'      => [
@@ -120,7 +134,7 @@ function admin_bar_agency( $wp_toolbar )
 /**
  * Filter: Replace the text displayed in the admin footer with Locomotive's imprint.
  *
- * @used-by Action: "admin_footer_text"
+ * @used-by Filter: WordPress\"admin_footer_text"
  *
  * @param string $text The content that will be printed.
  */
@@ -157,5 +171,5 @@ function sign()
 
 function get_signature()
 {
-	echo '<a target="_blank" href="//' . AGENCY_NAME . '/">' . sprintf( __( 'Why %s?', 'locomotive' ), AGENCY_NAME ) . '</a>';
+	return '<a target="_blank" href="//' . AGENCY_NAME . '/">' . sprintf( __( 'Why %s?', 'locomotive' ), AGENCY_NAME ) . '</a>';
 }
