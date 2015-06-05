@@ -76,7 +76,9 @@ function register_assets()
 
 function enqueue_assets()
 {
-	\wp_enqueue_style('locomotive-styles');
+	if ( is_admin_bar_showing() ) {
+		\wp_enqueue_style('locomotive-styles');
+	}
 }
 
 \add_action( 'admin_enqueue_scripts', __NAMESPACE__ . '\\enqueue_assets' );
